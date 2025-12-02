@@ -11,7 +11,6 @@ class App:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("IPTV Login")
-        self.key_press_count = 0
 
         # ---------- Login UI ----------
         self.frm_login = tk.Frame(self.root)
@@ -27,9 +26,8 @@ class App:
 
         tk.Button(self.frm_login, text="Login", command=self.login).pack(pady=5)
 
-        # load previous settings
+        # بارگذاری تنظیمات قبلی
         self.load_settings()
-        self.root.bind("<Key>", self.secret_key)
 
         self.root.geometry("400x200")
         self.root.mainloop()
@@ -42,15 +40,20 @@ class App:
                     s = json.load(f)
                     self.txt_user.insert(0, s.get("username", ""))
                     self.txt_pass.insert(0, s.get("password", ""))
-            except:
-                pass
+            except json.JSONDecodeError:
+                messagebox.showwarning("Settings Error", "Settings file is corrupted.")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to load settings: {e}")
 
     def save_settings(self):
-        with open(SETTINGS_FILE, "w") as f:
-            json.dump({
-                "username": self.txt_user.get(),
-                "password": self.txt_pass.get()
-            }, f)
+        try:
+            with open(SETTINGS_FILE, "w") as f:
+                json.dump({
+                    "username": self.txt_user.get(),
+                    "password": self.txt_pass.get()
+                }, f)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save settings: {e}")
 
     # ---------- URL Builder ----------
     def build_url(self):
@@ -73,7 +76,7 @@ class App:
         url = self.build_url()
         self.save_settings()
 
-        # remove the login window
+        # مخفی کردن پنجره لاگین
         self.frm_login.pack_forget()
 
         try:
@@ -81,17 +84,6 @@ class App:
             webview.start()
         except Exception as e:
             messagebox.showerror("Error loading site", str(e))
-
-    # ---------- Secret Key ----------
-    def secret_key(self, event):
-        if event.keysym == "Up":
-            self.key_press_count += 1
-            if self.key_press_count >= 9:
-                messagebox.showinfo("Secret", "Hidden settings unlocked!")
-                self.key_press_count = 0
-        else:
-            self.key_press_count = 0
-
 
 if __name__ == "__main__":
     App()
